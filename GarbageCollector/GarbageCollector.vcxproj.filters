@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Infrastructure">
+      <UniqueIdentifier>{21ff1347-3898-428f-b892-d9714e222743}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Infrastructure</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Infrastructure</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="GCPtr.hpp" />
+  </ItemGroup>
+</Project>
