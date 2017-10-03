@@ -19,5 +19,6 @@
     </ClInclude>
     <ClInclude Include="targetver.h" />
     <ClInclude Include="GCPtr.hpp" />
+    <ClInclude Include="Iterator.hpp" />
   </ItemGroup>
 </Project>

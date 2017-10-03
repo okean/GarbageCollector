@@ -104,9 +104,7 @@ TEST(GCPtr, GoingOutOfScope)
     GCPtr<int> p = new int(10);
     GCPtr<int> q = new int(11);
 
-
     const int val = 12;
-    int * k = nullptr;
 
     #ifdef _DEBUG
     std::cout << "Before entering block" << std::endl;
@@ -116,10 +114,10 @@ TEST(GCPtr, GoingOutOfScope)
         GCPtr<int> r = new int(val);
         ASSERT_EQ(*r, val);
 
-        k = r;
+        q = r;
     }
 
-    ASSERT_NE(*k, val);
+    ASSERT_EQ(*q, val);
 
     #ifdef _DEBUG
     std::cout << "After exiting block" << std::endl;
@@ -164,6 +162,31 @@ TEST(GCPtr, ArraySanity)
     {
         ASSERT_EQ(ap[i], i);
     }
+}
+
+TEST(GCPtr, GCIterator)
+{
+    const size_t size = 10;
+
+    GCPtr<int, size> ap = new int[size];
+
+    GCPtr<int, size>::GCIterator it = ap.begin();
+
+    size_t count = 0;
+
+    for (; count < it.size(); count++)
+    {
+        it[count] = count;
+    }
+
+    count = 0;
+
+    for (it = ap.begin(); it != ap.end(); it++, count++)
+    {
+        ASSERT_EQ(*it, count);
+    }
+
+    ASSERT_EQ(ap.end() - ap.begin(), size);
 }
 
 TEST(GCPtr, ClassSanity)

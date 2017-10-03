@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
+#include "Iterator.hpp"
 
 namespace Util {
 namespace Memory {
@@ -12,6 +13,9 @@ public:
     GCPtr(T *t = nullptr);
     GCPtr(const GCPtr &obj);
     ~GCPtr();
+
+public: // public typedefs
+    typedef Iterator<T> GCIterator;
 
 public: // interface
     T &operator*() const
@@ -37,6 +41,9 @@ public: // interface
     T *operator=(T *t);
     
     GCPtr<T, size> & operator=(GCPtr &obj);
+
+    GCIterator begin() const;
+    GCIterator end() const;
 
 public: // class interface
     static size_t gclistSize()
@@ -198,6 +205,36 @@ GCPtr<T, size> & GCPtr<T, size>::operator=(GCPtr &obj)
 }
 
 template <class T, size_t size>
+Iterator<T> GCPtr<T, size>::begin() const
+{
+    size_t size = 1;
+
+    if (gcPtrImpl->isArray())
+    {
+        size = gcPtrImpl->arraySize;
+    }
+
+    return GCIterator(gcPtrImpl->memPtr, 
+        gcPtrImpl->memPtr, 
+        gcPtrImpl->memPtr + size);
+}
+
+template <class T, size_t size>
+Iterator<T> GCPtr<T, size>::end() const
+{
+    size_t size = 1;
+
+    if (gcPtrImpl->isArray())
+    {
+        size = gcPtrImpl->arraySize;
+    }
+
+    return GCIterator(gcPtrImpl->memPtr + size,
+        gcPtrImpl->memPtr,
+        gcPtrImpl->memPtr + size);
+}
+
+template <class T, size_t size>
 bool GCPtr<T, size>::collect()
 {
     bool memfreed = false;
@@ -327,4 +364,4 @@ typename GCPtr<T, size>::GCPtrImpl_ * GCPtr<T, size>::createPtrOrIncreaseRefcoun
 }
 
 }  // namespace Memory
-}  // namespace Memoory
+}  // namespace Util
