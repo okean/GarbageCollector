@@ -21,10 +21,10 @@
     <ClCompile Include="Tests\TestGCPtr.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="TestLoad.cpp">
+    <ClCompile Include="Tests\TestIterator.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="Tests\TestIterator.cpp">
+    <ClCompile Include="Tests\TestLoad.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>
