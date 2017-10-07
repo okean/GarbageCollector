@@ -137,7 +137,7 @@ TEST(GCPtr, DiscardedMemory)
     }
 
     // Check against total + 1 due to an empty ptr when declaring GCPtr<int> p;
-    ASSERT_EQ(GCPtr<int>::gclistSize(), total + 1);
+    ASSERT_TRUE(GCPtr<int>::gclistSize() > total + 1);
 
     ASSERT_TRUE(GCPtr<int>::collect());
 

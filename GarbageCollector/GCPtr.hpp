@@ -1,7 +1,9 @@
 #pragma once
 
 #include "stdafx.h"
+#include "CriticalSection.h"
 #include "Iterator.hpp"
+#include <process.h>
 
 namespace Util {
 namespace Memory {
@@ -48,9 +50,12 @@ public: // interface
 public: // class interface
     static size_t gclistSize()
     {
+        CRITICAL_SECTION_LOCK(cs);
+
         return gclist.size();
     }
     static bool collect();
+    static bool isRunning();
     static void showlist();
     static void cleanup();
 
@@ -111,29 +116,46 @@ private: // internal class typedefs
 private: // internal class helpers
     static typename GCPtrList_::iterator findPtrImpl(const T *ptr);
     static GCPtrImpl_* createPtrOrIncreaseRefcount(T *ptr, size_t size);
+    static unsigned __stdcall gc(void *param);
 
 private: // member variables
-    static bool             first;
     static GCPtrList_       gclist;
+    static HANDLE           hThrd;
+    static CriticalSection  cs;
+    static size_t           instCount;
 
     GCPtrImpl_             *gcPtrImpl;
+    unsigned                tid;
 };
-
-template <class T, size_t size>
-bool GCPtr<T, size>::first = true;
 
 template <class T, size_t size>
 typename GCPtr<T, size>::GCPtrList_ GCPtr<T, size>::gclist;
 
 template <class T, size_t size>
+HANDLE GCPtr<T, size>::hThrd = 0;
+
+template <class T, size_t size>
+CriticalSection GCPtr<T, size>::cs;
+
+template <class T, size_t size>
+size_t GCPtr<T, size>::instCount = 0;
+
+template <class T, size_t size>
 GCPtr<T, size>::GCPtr(T *t)
     : gcPtrImpl{ createPtrOrIncreaseRefcount(t, size) }
 {
-    if (first)
+    CRITICAL_SECTION_LOCK(cs);
+
+    if (!hThrd)
     {
+        hThrd = (HANDLE) _beginthreadex(NULL, 0, gc, (void *) 0, 0, &tid);
+
+        ::SetThreadPriority(hThrd, THREAD_PRIORITY_BELOW_NORMAL);
+
         ::atexit(cleanup);
-        first = false;
     }
+
+    instCount++;
 
     #ifdef _DEBUG
     std::cout << "Constructing GCPtr. ";
@@ -166,21 +188,25 @@ GCPtr<T, size>::GCPtr(const GCPtr &obj)
 template <class T, size_t size>
 GCPtr<T, size>::~GCPtr()
 {
+    CRITICAL_SECTION_LOCK(cs);
+
     if (gcPtrImpl->refCount)
     {
         gcPtrImpl->refCount--;
     }
 
+    instCount--;
+
     #ifdef _DEBUG
     std::cout << "GCPtr going out of scope." << std::endl;
     #endif
-
-    collect();
 }
 
 template <class T, size_t size>
 T * GCPtr<T, size>::operator=(T *t)
 {
+    CRITICAL_SECTION_LOCK(cs);
+
     if (gcPtrImpl->refCount)
     {
         gcPtrImpl->refCount--;
@@ -194,6 +220,8 @@ T * GCPtr<T, size>::operator=(T *t)
 template <class T, size_t size>
 GCPtr<T, size> & GCPtr<T, size>::operator=(GCPtr &obj)
 {
+    CRITICAL_SECTION_LOCK(cs);
+
     if (gcPtrImpl->refCount)
     {
         gcPtrImpl->refCount--;
@@ -237,6 +265,8 @@ Iterator<T> GCPtr<T, size>::end() const
 template <class T, size_t size>
 bool GCPtr<T, size>::collect()
 {
+    CRITICAL_SECTION_LOCK(cs);
+
     bool memfreed = false;
 
     #ifdef _DEBUG
@@ -275,8 +305,16 @@ bool GCPtr<T, size>::collect()
 }
 
 template <class T, size_t size>
+bool GCPtr<T, size>::isRunning()
+{
+    return instCount > 0;
+}
+
+template <class T, size_t size>
 void GCPtr<T, size>::showlist()
 {
+    CRITICAL_SECTION_LOCK(cs);
+
     std::cout << "gclist<" << typeid(T).name() << ", " << size << ">:\n";
 
     std::cout << "memPtr\t\trefCount\tvalue\n";
@@ -316,15 +354,15 @@ void GCPtr<T, size>::cleanup()
         it->refCount = 0;
     }
 
-#ifdef _DEBUG
+    #ifdef _DEBUG
     std::cout << "Before collecting for cleanup() for " << typeid(T).name() << std::endl;
-#endif
+    #endif
 
     collect();
 
-#ifdef _DEBUG
+    #ifdef _DEBUG
     std::cout << "After collecting for cleanup() for " << typeid(T).name() << std::endl;
-#endif
+    #endif
 
     gclist.clear();
 }
@@ -343,6 +381,8 @@ typename GCPtr<T, size>::GCPtrList_::iterator GCPtr<T, size>::findPtrImpl(const 
 template <class T, size_t size>
 typename GCPtr<T, size>::GCPtrImpl_ * GCPtr<T, size>::createPtrOrIncreaseRefcount(T *ptr, size_t size)
 {
+    CRITICAL_SECTION_LOCK(cs);
+
     GCPtrImpl_ *gcPtr_;
 
     auto it = findPtrImpl(ptr);
@@ -361,6 +401,32 @@ typename GCPtr<T, size>::GCPtrImpl_ * GCPtr<T, size>::createPtrOrIncreaseRefcoun
     }
 
     return gcPtr_;
+}
+
+template <class T, size_t size>
+unsigned __stdcall GCPtr<T, size>::gc(void *param)
+{
+    #ifdef DEBUG
+    std::cout << "Garbage collection started" << std::endl;
+    #endif
+
+    while (isRunning())
+    {
+        collect();
+        ::Sleep(5);
+    }
+
+    collect();
+
+    ::CloseHandle(hThrd);
+    hThrd = 0;
+
+    #ifdef DEBUG
+    std::cout << "Garbage collection terminated for" <<
+        << typeid(T).name() <<  std::endl;
+    #endif
+
+    return 0;
 }
 
 }  // namespace Memory

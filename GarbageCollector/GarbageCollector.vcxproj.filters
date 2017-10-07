@@ -12,6 +12,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Infrastructure</Filter>
     </ClCompile>
+    <ClCompile Include="CriticalSection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -20,5 +21,6 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="GCPtr.hpp" />
     <ClInclude Include="Iterator.hpp" />
+    <ClInclude Include="CriticalSection.h" />
   </ItemGroup>
 </Project>

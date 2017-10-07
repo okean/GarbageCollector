@@ -31,7 +31,7 @@ namespace
 
         friend std::ostream &operator<<(std::ostream &strm, const MyClass &obj);
 
-        double c[1000000];
+        double c[100000];
 
     private:
         int a, b;
@@ -50,22 +50,14 @@ TEST(Load, Test)
     GCPtr<MyClass> mp;
 
     ASSERT_NO_THROW(
-        for (size_t i = 1; i < 20000; i++)
+        for (size_t i = 1; i < 2000; i++)
         {
-            try
-            {
-                mp = new MyClass(i, i);
-            }
-            catch (std::bad_alloc ex)
-            {
-                std::cout << "Last object: " << *mp << std::endl;
-                std::cout << "Size of gclist before calling collect(): "
-                    << GCPtr<MyClass>::gclistSize() << std::endl;
 
-                GCPtr<MyClass>::collect();
+            mp = new MyClass(i, i);
 
-                std::cout << "Size of gclist after calling collect(): "
-                    << GCPtr<MyClass>::gclistSize() << std::endl;
+            if (!(i % 100))
+            {
+                std::cout << "gclist contains " << GCPtr<MyClass>::gclistSize() << " entries.\n";
             }
         }
     );
